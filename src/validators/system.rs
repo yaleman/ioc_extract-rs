@@ -1,7 +1,8 @@
 use fancy_regex::Regex;
+use once_cell::sync::Lazy;
 
-lazy_static! {
-    static ref REGISTRY: Regex =  Regex::new(
+static REGISTRY: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(
         &[
             r"(?mxi)",
             r"(?!^.*?(?:\^.*$",
@@ -21,8 +22,10 @@ lazy_static! {
             r"($|[^\\]+$)",
         ]
         .join("")
-    ).unwrap();
-    static ref SQL: Regex = Regex::new(
+    ).unwrap()
+});
+static SQL: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(
         &[
             r"(?xmi)(",
             r"^[^\S\n]*",
@@ -39,13 +42,16 @@ lazy_static! {
             r")+",
         ]
         .join("")
-    ).unwrap();
-    static ref REGEX: Regex = Regex::new(
-        &[
-            r"^.*?(\[\^.*?\]|\[[^\[]+?\-[^\[]+?\]|^\^|\{\d*,?\d*\}|\$$|[\(\)\]]\?).*"
-        ].join("")
-    ).unwrap();
-    static ref FILE_PATH: Regex = Regex::new(
+    ).unwrap()
+});
+static REGEX: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(
+        &[r"^.*?(\[\^.*?\]|\[[^\[]+?\-[^\[]+?\]|^\^|\{\d*,?\d*\}|\$$|[\(\)\]]\?).*"].join(""),
+    )
+    .unwrap()
+});
+static FILE_PATH: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(
         &[
             r"(?ix)^",
             r"(?:",
@@ -61,10 +67,12 @@ lazy_static! {
             r"[^\\\/\.\s<>:",
             "\"",
             r"\|\?\*]",
-            r"\.\w{3,4}$"
-        ].join("")
-    ).unwrap();
-}
+            r"\.\w{3,4}$",
+        ]
+        .join(""),
+    )
+    .unwrap()
+});
 
 pub fn is_registry_key(value: &str) -> bool {
     //! Checks to see if a Given String is a registry key

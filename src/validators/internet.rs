@@ -1,19 +1,25 @@
 use fancy_regex::Regex;
 use idna::domain_to_ascii;
+use once_cell::sync::Lazy;
 
-lazy_static! {
-    static ref DOMAIN: Regex = Regex::new(
+static DOMAIN: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(
         &[
-            r"(?i)^(?:[a-zA-Z0-9]",                     // First character of the domain
-            r"(?:[a-zA-Z0-9-_]{0,61}[A-Za-z0-9])?\.)",  // Sub domain + hostname
-            r"+[A-Za-z0-9][A-Za-z0-9-_]{0,61}",         // First 61 characters of the gTLD
-            r"[A-Za-z]$",                               // Last character of the gTLD
-        ].join("")
-    ).unwrap();
-    static ref DOMAIN_WHITELIST: Vec<&'static str> = vec!["localhost"];
-    static ref DOMAINS_EXT: Vec<String> = tld_download::from_db();
-    static ref EMAIL: Regex = Regex::new(r"^[A-Za-z0-9\.\+_-]+@[A-Za-z0-9\._-]+\.[a-zA-Z0-9\-]*$").unwrap();
-    static ref EMAIL_DOMAIN: Regex = Regex::new(
+            r"(?i)^(?:[a-zA-Z0-9]",                    // First character of the domain
+            r"(?:[a-zA-Z0-9-_]{0,61}[A-Za-z0-9])?\.)", // Sub domain + hostname
+            r"+[A-Za-z0-9][A-Za-z0-9-_]{0,61}",        // First 61 characters of the gTLD
+            r"[A-Za-z]$",                              // Last character of the gTLD
+        ]
+        .join(""),
+    )
+    .unwrap()
+});
+static DOMAIN_WHITELIST: Lazy<Vec<&'static str>> = Lazy::new(|| vec!["localhost"]);
+static DOMAINS_EXT: Lazy<Vec<String>> = Lazy::new(tld_download::from_db);
+static EMAIL: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"^[A-Za-z0-9\.\+_-]+@[A-Za-z0-9\._-]+\.[a-zA-Z0-9\-]*$").unwrap());
+static EMAIL_DOMAIN: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(
         &[
             // ignore case
             r"(?i)",
@@ -23,11 +29,16 @@ lazy_static! {
             // literal form, ipv4 address (SMTP 4.1.3)
             r"|^\[(25[0-5]|2[0-4]\d|[0-1]?\d?\d)",
             r"(\.(25[0-5]|2[0-4]\d|[0-1]?\d?\d)){3}\]$",
-        ].join("")
-    ).unwrap();
-    static ref IP_MIDDLE_OCTET: &'static str = r"(?:\.(?:1?\d{1,2}|2[0-4]\d|25[0-5]))";
-    static ref IP_LAST_OCTET: &'static str = r"(?:\.(?:[1-9]\d?|1\d\d|2[0-4]\d|25[0-4]))";
-    static ref URL: Regex = Regex::new(
+        ]
+        .join(""),
+    )
+    .unwrap()
+});
+static IP_MIDDLE_OCTET: Lazy<&'static str> = Lazy::new(|| r"(?:\.(?:1?\d{1,2}|2[0-4]\d|25[0-5]))");
+static IP_LAST_OCTET: Lazy<&'static str> =
+    Lazy::new(|| r"(?:\.(?:[1-9]\d?|1\d\d|2[0-4]\d|25[0-4]))");
+static URL: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(
         &[
             r"(?i)",
             // protocol identifier
@@ -39,9 +50,21 @@ lazy_static! {
             r"(?P<private_ip>",
             // IP address exclusion
             // private & local networks
-            format!(r"(?:(?:10|127){}{}{})|", *IP_MIDDLE_OCTET, r"{2}", *IP_LAST_OCTET).as_str(),
-            format!(r"(?:(?:169\.254|192\.168){}{})|", *IP_MIDDLE_OCTET, *IP_LAST_OCTET).as_str(),
-            format!(r"(?:172\.(?:1[6-9]|2\d|3[0-1]){}{}))", *IP_MIDDLE_OCTET, *IP_LAST_OCTET).as_str(),
+            format!(
+                r"(?:(?:10|127){}{}{})|",
+                *IP_MIDDLE_OCTET, r"{2}", *IP_LAST_OCTET
+            )
+            .as_str(),
+            format!(
+                r"(?:(?:169\.254|192\.168){}{})|",
+                *IP_MIDDLE_OCTET, *IP_LAST_OCTET
+            )
+            .as_str(),
+            format!(
+                r"(?:172\.(?:1[6-9]|2\d|3[0-1]){}{}))",
+                *IP_MIDDLE_OCTET, *IP_LAST_OCTET
+            )
+            .as_str(),
             r"|",
             // private & local hosts
             r"(?P<private_host>",
@@ -107,9 +130,11 @@ lazy_static! {
             // fragment
             r"(?:#\S*)?",
             r"$",
-        ].join("")
-    ).unwrap();
-}
+        ]
+        .join(""),
+    )
+    .unwrap()
+});
 
 fn is_tld_valid(domain: &str) -> bool {
     //! Checks to see if a Given Domain contains a valid tld like

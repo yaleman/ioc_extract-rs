@@ -1,6 +1,3 @@
-#[macro_use]
-extern crate lazy_static;
-
 mod validators;
 mod worker;
 
@@ -45,6 +42,7 @@ impl Artifacts {
         Ok(Self::from_str(&f))
     }
 
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Option<Self> {
         //! Extracts Indicators from a given string
         //!
