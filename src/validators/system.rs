@@ -1,7 +1,8 @@
-use fancy_regex::Regex;
-use once_cell::sync::Lazy;
+use std::sync::LazyLock;
 
-static REGISTRY: Lazy<Regex> = Lazy::new(|| {
+use fancy_regex::Regex;
+
+static REGISTRY: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
         &[
             r"(?mxi)",
@@ -24,7 +25,7 @@ static REGISTRY: Lazy<Regex> = Lazy::new(|| {
         .join("")
     ).unwrap()
 });
-static SQL: Lazy<Regex> = Lazy::new(|| {
+static SQL: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
         &[
             r"(?xmi)(",
@@ -44,13 +45,13 @@ static SQL: Lazy<Regex> = Lazy::new(|| {
         .join("")
     ).unwrap()
 });
-static REGEX: Lazy<Regex> = Lazy::new(|| {
+static REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
         &[r"^.*?(\[\^.*?\]|\[[^\[]+?\-[^\[]+?\]|^\^|\{\d*,?\d*\}|\$$|[\(\)\]]\?).*"].join(""),
     )
     .unwrap()
 });
-static FILE_PATH: Lazy<Regex> = Lazy::new(|| {
+static FILE_PATH: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
         &[
             r"(?ix)^",

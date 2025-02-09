@@ -1,35 +1,37 @@
 use fancy_regex::Regex;
-use once_cell::sync::Lazy;
+use std::sync::LazyLock;
 
 /// Bitcoin Regex Pattern
-static BTC: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)^[13][a-km-zA-HJ-NP-Z1-9]{26,33}|bc1[a-z0-9]{39,59}\b").unwrap());
+static BTC: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"(?i)^[13][a-km-zA-HJ-NP-Z1-9]{26,33}|bc1[a-z0-9]{39,59}\b").unwrap()
+});
 /// Bitcoin Cash Regex Pattern
-static BCH: Lazy<Regex> = Lazy::new(|| {
+static BCH: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"(?i)^(((bitcoincash|bchreg|bchtest):)?(?:q|p)[a-z0-9]{41}|[13][a-km-zA-HJ-NP-Z1-9]{33})\b").unwrap()
 });
 /// Ethereum Regex Pattern
-static ETH: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)^0x[a-fA-F0-9]{40}\b").unwrap());
+static ETH: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(?i)^0x[a-fA-F0-9]{40}\b").unwrap());
 /// Litecoin Regex Patter)n
-static LTC: Lazy<Regex> = Lazy::new(|| {
+static LTC: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"(?i)^(?:ltc1|[LM])(?=\S*?\d\S*?\b)[a-km-zA-HJ-NP-Z1-9]{26,33}\b").unwrap()
 });
 /// Dodge Coin Regex Pattern
-static DODGE: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)^D[5-9A-HJ-NP-U][1-9a-km-zA-HJ-NP-Z]{32}\b").unwrap());
+static DODGE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"(?i)^D[5-9A-HJ-NP-U][1-9a-km-zA-HJ-NP-Z]{32}\b").unwrap());
 /// Dash Regex Pattern
-static DASH: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)^X[1-9A-HJ-NP-Za-km-z]{33}\b").unwrap());
+static DASH: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"(?i)^X[1-9A-HJ-NP-Za-km-z]{33}\b").unwrap());
 /// Monero Regex Pattern
-static XMR: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)^[48][0-9AB][1-9A-HJ-NP-Za-km-z]{93}\b").unwrap());
+static XMR: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"(?i)^[48][0-9AB][1-9A-HJ-NP-Za-km-z]{93}\b").unwrap());
 /// Neo Regex Patter)n
-static NEO: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)^A[0-9a-zA-Z]{33}\b").unwrap());
+static NEO: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(?i)^A[0-9a-zA-Z]{33}\b").unwrap());
 /// Ripple Regex Patter)n
-static XRP: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)^[rx](?=\S*?\d\S*?\b)[0-9a-zA-Z]{33,47}\b").unwrap());
+static XRP: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"(?i)^[rx](?=\S*?\d\S*?\b)[0-9a-zA-Z]{33,47}\b").unwrap());
 
 /// Incase of Illegal chars for a Crypto Wallet
-static ILLEGAL_CHARS: Lazy<Vec<String>> = Lazy::new(|| {
+static ILLEGAL_CHARS: LazyLock<Vec<String>> = LazyLock::new(|| {
     [
         '.', '!', '%', '*', '$', '#', '@', ')', '(', '^', '`', '~', '|', '>', '<', '-', '_', '"',
         '\\', '}', '{', ':', ';', ',', '/', '?',

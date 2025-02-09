@@ -12,9 +12,8 @@ exclude = ["data", "examples"]
 edition = "2021"
 
 [dependencies]
-fancy-regex = "0.7"
-idna = "0.2"
-once_cell = "1.20.2"
+fancy-regex = "0.14.0"
+idna = "1.0.3"
 serde = { version = "1", features = ["derive"] }
 tld_download = { version = "0.1.3", features = ["with-db"] }
 

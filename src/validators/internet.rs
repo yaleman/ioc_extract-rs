@@ -1,8 +1,8 @@
 use fancy_regex::Regex;
 use idna::domain_to_ascii;
-use once_cell::sync::Lazy;
+use std::sync::LazyLock;
 
-static DOMAIN: Lazy<Regex> = Lazy::new(|| {
+static DOMAIN: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
         &[
             r"(?i)^(?:[a-zA-Z0-9]",                    // First character of the domain
@@ -14,11 +14,11 @@ static DOMAIN: Lazy<Regex> = Lazy::new(|| {
     )
     .unwrap()
 });
-static DOMAIN_WHITELIST: Lazy<Vec<&'static str>> = Lazy::new(|| vec!["localhost"]);
-static DOMAINS_EXT: Lazy<Vec<String>> = Lazy::new(tld_download::from_db);
-static EMAIL: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"^[A-Za-z0-9\.\+_-]+@[A-Za-z0-9\._-]+\.[a-zA-Z0-9\-]*$").unwrap());
-static EMAIL_DOMAIN: Lazy<Regex> = Lazy::new(|| {
+static DOMAIN_WHITELIST: LazyLock<Vec<&'static str>> = LazyLock::new(|| vec!["localhost"]);
+static DOMAINS_EXT: LazyLock<Vec<String>> = LazyLock::new(tld_download::from_db);
+static EMAIL: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"^[A-Za-z0-9\.\+_-]+@[A-Za-z0-9\._-]+\.[a-zA-Z0-9\-]*$").unwrap());
+static EMAIL_DOMAIN: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
         &[
             // ignore case
@@ -34,10 +34,11 @@ static EMAIL_DOMAIN: Lazy<Regex> = Lazy::new(|| {
     )
     .unwrap()
 });
-static IP_MIDDLE_OCTET: Lazy<&'static str> = Lazy::new(|| r"(?:\.(?:1?\d{1,2}|2[0-4]\d|25[0-5]))");
-static IP_LAST_OCTET: Lazy<&'static str> =
-    Lazy::new(|| r"(?:\.(?:[1-9]\d?|1\d\d|2[0-4]\d|25[0-4]))");
-static URL: Lazy<Regex> = Lazy::new(|| {
+static IP_MIDDLE_OCTET: LazyLock<&'static str> =
+    LazyLock::new(|| r"(?:\.(?:1?\d{1,2}|2[0-4]\d|25[0-5]))");
+static IP_LAST_OCTET: LazyLock<&'static str> =
+    LazyLock::new(|| r"(?:\.(?:[1-9]\d?|1\d\d|2[0-4]\d|25[0-4]))");
+static URL: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
         &[
             r"(?i)",
