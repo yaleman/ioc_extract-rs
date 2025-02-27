@@ -1,4 +1,4 @@
-mod validators;
+pub mod validators;
 mod worker;
 
 use serde::{Deserialize, Serialize};

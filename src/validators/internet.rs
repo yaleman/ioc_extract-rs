@@ -5,10 +5,10 @@ use std::sync::LazyLock;
 static DOMAIN: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
         &[
-            r"(?i)^(?:[a-zA-Z0-9]",                    // First character of the domain
-            r"(?:[a-zA-Z0-9-_]{0,61}[A-Za-z0-9])?\.)", // Sub domain + hostname
-            r"+[A-Za-z0-9][A-Za-z0-9-_]{0,61}",        // First 61 characters of the gTLD
-            r"[A-Za-z]$",                              // Last character of the gTLD
+            r"(?i)^(?:[a-zA-Z0-9]", // First character of the domain
+            r"(?:[a-zA-Z0-9-_]{0,61}[A-Za-z0-9])?(\[\.\]|\.))", // Sub domain + hostname
+            r"+[A-Za-z0-9][A-Za-z0-9-_]{0,61}", // First 61 characters of the gTLD
+            r"[A-Za-z]$",           // Last character of the gTLD
         ]
         .join(""),
     )
@@ -16,8 +16,10 @@ static DOMAIN: LazyLock<Regex> = LazyLock::new(|| {
 });
 static DOMAIN_WHITELIST: LazyLock<Vec<&'static str>> = LazyLock::new(|| vec!["localhost"]);
 static DOMAINS_EXT: LazyLock<Vec<String>> = LazyLock::new(tld_download::from_db);
-static EMAIL: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"^[A-Za-z0-9\.\+_-]+@[A-Za-z0-9\._-]+\.[a-zA-Z0-9\-]*$").unwrap());
+/// Email matcher, (\[\.\]|\.) matches literal "." or "[.]" in the domain
+static EMAIL: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"^[A-Za-z0-9\.\+_-]+@[A-Za-z0-9\._-]+(\[\.\]|\.)[a-zA-Z0-9\-]*$").unwrap()
+});
 static EMAIL_DOMAIN: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
         &[
@@ -38,12 +40,16 @@ static IP_MIDDLE_OCTET: LazyLock<&'static str> =
     LazyLock::new(|| r"(?:\.(?:1?\d{1,2}|2[0-4]\d|25[0-5]))");
 static IP_LAST_OCTET: LazyLock<&'static str> =
     LazyLock::new(|| r"(?:\.(?:[1-9]\d?|1\d\d|2[0-4]\d|25[0-4]))");
-static URL: LazyLock<Regex> = LazyLock::new(|| {
+
+static PROTOCOLS: LazyLock<&'static str> =
+    LazyLock::new(|| r#"(?:(?:http|https|hxxp|hxxps|ftp)://)"#);
+pub static URL: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
         &[
             r"(?i)",
             // protocol identifier
-            r"(?:(?:https?|ftp)://)",
+            // r"(?:(?:https?|ftp)://)",
+            *PROTOCOLS,
             // user:pass authentication
             r"(?:[-a-z\u00a1-\uffff0-9._~%!$&'()*+,;=:]+",
             r"(?::[-a-z0-9._~%!$&'()*+,;=:]*)?@)?",
@@ -117,10 +123,10 @@ static URL: LazyLock<Regex> = LazyLock::new(|| {
             r")\]|",
             // host name
             r"(?:(?:[a-z\u00a1-\uffff0-9]-?)*[a-z\u00a1-\uffff0-9]+)",
-            // domain name
-            r"(?:\.(?:[a-z\u00a1-\uffff0-9]-?)*[a-z\u00a1-\uffff0-9]+)*",
-            // TLD identifier
-            r"(?:\.(?:[a-z\u00a1-\uffff]{2,}))",
+            // domain name, (\[\.\]|\.) matches literal "." or "[.]"
+            r"(?:(\[\.\]|\.)(?:[a-z\u00a1-\uffff0-9]-?)*[a-z\u00a1-\uffff0-9]+)*",
+            // TLD identifier, (\[\.\]|\.) matches literal "." or "[.]"
+            r"(?:(\[\.\]|\.)(?:[a-z\u00a1-\uffff]{2,}))",
             r")",
             // port number
             r"(?::\d{2,5})?",
@@ -130,7 +136,7 @@ static URL: LazyLock<Regex> = LazyLock::new(|| {
             r"(?:\?\S*)?",
             // fragment
             r"(?:#\S*)?",
-            r"$",
+            // r"$",
         ]
         .join(""),
     )
@@ -269,6 +275,13 @@ mod tests {
     }
 
     #[test]
+    fn test_email_whitelist() {
+        assert!(is_email("johndoe@localhost", None));
+        assert!(is_email("johndoe@localhost", Some(vec!["localhost"])));
+        assert!(!is_email("johndoe@localhost", Some(vec!["example.com"])));
+    }
+
+    #[test]
     fn test_is_domain() {
         // Valid
         assert!(is_domain("example.com"));
@@ -316,6 +329,18 @@ mod tests {
         assert_eq!(
             get_url("https://example.co.uk").unwrap(),
             "https://example.co.uk"
+        );
+        assert_eq!(
+            get_url("https://example[.]co[.]uk").unwrap(),
+            "https://example[.]co[.]uk"
+        );
+        assert_eq!(
+            get_url("hxxps://example.co.uk").unwrap(),
+            "hxxps://example.co.uk"
+        );
+        assert_eq!(
+            get_url("hxxps://example[.]co[.]uk").unwrap(),
+            "hxxps://example[.]co[.]uk"
         );
         assert_eq!(
             get_url("http://www.example.co.uk").unwrap(),
