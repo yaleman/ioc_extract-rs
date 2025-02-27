@@ -27,8 +27,7 @@ pub fn by_newline(s: String) -> NewlineResult {
     let mut file_paths = vec![];
 
     // check for registry keys & sql queries by breaking only newlines
-    for x in s.split('\n').collect::<Vec<&str>>() {
-        let x = x.trim();
+    for x in s.lines().map(|x| x.trim()).collect::<Vec<&str>>() {
         if system::is_registry_key(x) {
             registry.push(x.to_string())
         } else if system::is_sql(x) {
@@ -74,6 +73,8 @@ pub fn by_whitespace(s: String) -> WhitespaceResult {
     // check for the rest by breaking newlines, whitespace, tabs, etc...
     for x in s.split_whitespace().collect::<Vec<&str>>() {
         let x = x.trim();
+        ip_address.extend(network::find_ips(x));
+
         if network::is_ipv_any(x) || network::is_ip_cidr_any(x) {
             ip_address.push(x.to_string())
         } else if crypto::is_cryptocurrency_any(x) {

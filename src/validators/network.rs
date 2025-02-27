@@ -1,12 +1,13 @@
-use std::{net::IpAddr, str::FromStr};
+use std::{net::IpAddr, str::FromStr, sync::LazyLock};
+
+use fancy_regex::Regex;
+
+static IPV4_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)").expect("Failed to compile regex!")
+});
 
 /// Check to see if a given value corresponds to IPv4 Address.
 pub fn is_ipv4(value: &str) -> bool {
-    // 0., 1. & 2. ip subnets are reserved blocks of IANA & APNIC & RIPE NCC
-    // https://en.wikipedia.org/wiki/List_of_assigned_/8_IPv4_address_blocks
-    if value.starts_with("2.") || value.starts_with("1.") || value.starts_with("0.") {
-        return false;
-    }
     let ip = if let Ok(ipaddr) = IpAddr::from_str(value) {
         ipaddr
     } else {
@@ -42,6 +43,10 @@ pub fn is_ipv4_cidr(value: &str) -> bool {
 
     true
 }
+
+static IPV6_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"(?:(?:(?:[0-9A-Fa-f]{1,4}:){7}(?:[0-9A-Fa-f]{1,4}|:))|(?:(?:[0-9A-Fa-f]{1,4}:){6}(?::[0-9A-Fa-f]{1,4}|(?:(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(?:\.(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3})|:))|(?:(?:[0-9A-Fa-f]{1,4}:){5}(?:(?:(?::[0-9A-Fa-f]{1,4}){1,2})|:(?:(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(?:\.(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3})|:))|(?:(?:[0-9A-Fa-f]{1,4}:){4}(?:(?:(?::[0-9A-Fa-f]{1,4}){1,3})|(?:(?::[0-9A-Fa-f]{1,4})?:(?:(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(?:\.(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(?:(?:[0-9A-Fa-f]{1,4}:){3}(?:(?:(?::[0-9A-Fa-f]{1,4}){1,4})|(?:(?::[0-9A-Fa-f]{1,4}){0,2}:(?:(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(?:\.(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(?:(?:[0-9A-Fa-f]{1,4}:){2}(?:(?:(?::[0-9A-Fa-f]{1,4}){1,5})|(?:(?::[0-9A-Fa-f]{1,4}){0,3}:(?:(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(?:\.(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(?:(?:[0-9A-Fa-f]{1,4}:){1}(?:(?:(?::[0-9A-Fa-f]{1,4}){1,6})|(?:(?::[0-9A-Fa-f]{1,4}){0,4}:(?:(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(?:\.(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(?::(?:(?:(?::[0-9A-Fa-f]{1,4}){1,7})|(?:(?::[0-9A-Fa-f]{1,4}){0,5}:(?:(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(?:\.(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:)))(?:%.+)?\s*").expect("Failed to compile regex!")
+});
 
 /// Check to see if a given value corresponds to IPv6 Address.
 pub fn is_ipv6(value: &str) -> bool {
@@ -99,6 +104,45 @@ pub fn is_ipv_any(value: &str) -> bool {
     false
 }
 
+pub fn find_ips(value: &str) -> Vec<String> {
+    let mut ips = vec![];
+    for x in value.split_whitespace().collect::<Vec<&str>>() {
+        let x = x.trim();
+        if is_ipv_any(x) || is_ip_cidr_any(x) {
+            ips.push(x.to_string());
+        }
+    }
+
+    IPV4_REGEX.captures_iter(value).for_each(|cap| {
+        if let Ok(cap) = cap {
+            if let Some(res) = cap.get(0) {
+                if is_ipv4(res.as_str()) {
+                    ips.push(res.as_str().to_string());
+                }
+            }
+        }
+    });
+
+    IPV6_REGEX.captures_iter(value).for_each(|cap| {
+        if let Ok(cap) = cap {
+            if let Some(res) = cap.get(0) {
+                if is_ipv6(res.as_str()) {
+                    ips.push(res.as_str().to_string());
+                }
+            }
+        }
+    });
+    ips
+}
+
+#[test]
+fn test_find_ips() {
+    let ips = find_ips("asdfsafasdfdsf2001::1<asdfdsf,1.2.3.4");
+    dbg!(&ips);
+    assert!(ips.contains(&"2001::1".to_string()));
+    assert!(ips.contains(&"1.2.3.4".to_string()));
+}
+
 /// Check to see if a given value corresponds to any IP CIDR.
 pub fn is_ip_cidr_any(value: &str) -> bool {
     if is_ipv4_cidr(value) || is_ipv6_cidr(value) {
@@ -133,9 +177,9 @@ mod tests {
         assert!(!is_ipv4("12.110.105.256"));
         assert!(!is_ipv4("10.2.13"));
         assert!(!is_ipv4("256.10.10.1000"));
-        assert!(!is_ipv4("2.1.2.0"));
-        assert!(!is_ipv4("1.1.2.0"));
-        assert!(!is_ipv4("0.1.2.0"));
+        assert!(is_ipv4("2.1.2.0"));
+        assert!(is_ipv4("1.1.2.0"));
+        assert!(is_ipv4("0.1.2.0"));
     }
 
     #[test]
